@@ -102,13 +102,20 @@ def Spiral(args, duration_sec=0):
 	max_ncolours=7
 	min_fwhm=1.5
 	rmin=1.5
-	rmax=4.5
+	rmax=3.5
 	x0=4.
 	y0=4.
 	bg=(0, 0, 0)
-	thetastepdegmax=2.5
-	thetastepdegmin=5.
-	allcolours=[(255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255), (0,255,255), (255,255,255)]
+	thetastepdegmax=5.
+	thetastepdegmin=7.5
+	allcolours=[(255,0,0),
+		    (0,255,0),
+		    (0,0,255),
+		    (255,255,0),
+		    (255,0,255),
+		    (0,255,255),
+		    (255,255,255),
+		    (255,180,0)]
 
 	ncolours=min(np.random.randint(2, max_ncolours+1), len(allcolours))
 	colours=[]
@@ -129,7 +136,7 @@ def Spiral(args, duration_sec=0):
 	fwhm=np.random.random()*(max_fwhm-min_fwhm)+min_fwhm
 	#print("fwhm=%g" % fwhm)
 
-	max_ntheta=min(circumference/fwhm, 10) # Maximum number of spiral arms
+	max_ntheta=min(circumference/fwhm, 8) # Maximum number of spiral arms
 	#print("max_ntheta=%d" % max_ntheta)
 
 	# Choose ntheta as random multiple of len(colours) < max_ntheta 
@@ -141,7 +148,7 @@ def Spiral(args, duration_sec=0):
 	dtheta0=2.*scipy.constants.pi/ntheta*np.random.random()*dtheta0sign
 	#print("dtheta0=%g degrees" % (dtheta0/scipy.constants.pi*180))
 
-	nr=int(np.round(np.sqrt((rmax-rmin)*(rmax-rmin)+(rmax*dtheta0)*(rmax*dtheta0))/fwhm+1.))
+	nr=int(np.ceil(np.sqrt((rmax-rmin)*(rmax-rmin)+(rmax*dtheta0)*(rmax*dtheta0))/fwhm+1.))
 	#print("nr=%d" % nr)
 
 	theta0=np.linspace(0, dtheta0, nr)
