@@ -7,12 +7,22 @@ Licensed under Creative Commons Attribution-Noncommercial-Share Alike 3.0 Unport
 '''
 
 import unicornhat as unicorn
-import time, scipy.constants
+import time, scipy.constants, scipy.special
 import numpy as np
 import sys
 import traceback
 
-def spots_to_image(xc, yc, spot_sigma, spot_rgb, imw=8, imh=8, bg_rgb=(0,0,0)):
+sqrt2=np.sqrt(2.)
+
+def gaussian_spot_psf_1d(x0, x1, mu, recsig):
+        return 0.5*(scipy.special.erf((x1-mu)*recsig) - scipy.special.erf((x0-mu)*recsig) );
+
+def gaussian_spot_psf_2d(x0, x1, mux, sigmax, y0, y1, muy, sigmay):
+        recsigx=1./(sigmax*sqrt2)
+        recsigy=1./(sigmay*sqrt2)
+        return gaussian_spot_psf_1d(x0, x1, mux, recsigx)*gaussian_spot_psf_1d(y0, y1, muy, recsigy)
+
+def spots_to_image(xc, yc, spot_sigma, spot_rgb, imw=8, imh=8, bg_rgb=(0,0,0), use_erf=False):
 	
 	y, x=np.mgrid[0:imh, 0:imw]
 	x=x+0.5
@@ -23,7 +33,10 @@ def spots_to_image(xc, yc, spot_sigma, spot_rgb, imw=8, imh=8, bg_rgb=(0,0,0)):
 	b=np.zeros((imh, imw))+bg_rgb[2]
 
 	for i in range(len(xc)):
-		profile=np.exp(-(x-xc[i])*(x-xc[i])/(2*spot_sigma[i]*spot_sigma[i])-(y-yc[i])*(y-yc[i])/(2*spot_sigma[i]*spot_sigma[i]))
+		if use_erf:
+			profile=gaussian_spot_psf_2d(x-0.5, x+0.5, xc[i], spot_sigma[i], y-0.5, y+0.5, yc[i], spot_sigma[i])*2*scipy.constants.pi*spot_sigma[i]*spot_sigma[i]
+		else:
+			profile=np.exp(-(x-xc[i])*(x-xc[i])/(2*spot_sigma[i]*spot_sigma[i])-(y-yc[i])*(y-yc[i])/(2*spot_sigma[i]*spot_sigma[i]))
 		r+=spot_rgb[i][0]*profile
 		g+=spot_rgb[i][1]*profile
 		b+=spot_rgb[i][2]*profile
@@ -110,7 +123,7 @@ def Spiral(args, duration_sec=0):
 	circumference=2.*scipy.constants.pi*rmax
 
 	# Maximum fwhm of spirals we can fit in circumference
-	max_fwhm=min(circumference/len(colours), 3)*0.7
+	max_fwhm=min(circumference/len(colours), 3)*0.5
 	#print("max_fwhm=%g" % max_fwhm)
 
 	fwhm=np.random.random()*(max_fwhm-min_fwhm)+min_fwhm
@@ -162,7 +175,7 @@ def Spiral(args, duration_sec=0):
 
 			theta0[ir]+=scipy.constants.pi/180.*thetastepdeg
 
-		set_image(spots_to_image(x, y, sigma, rgb, bg_rgb=bg))
+		set_image(spots_to_image(x, y, sigma, rgb, bg_rgb=bg, use_erf=args.use_erf))
 		time.sleep(args.dt_sec)
 		
 def ProcessCommandLine():
@@ -182,6 +195,8 @@ def ProcessCommandLine():
 			    help='Interval between each animation frame')
  	parser.add_argument('--n-loop', metavar='COUNT', type=int, default=0,
 			    help='How times to show animations (0 for forever)')
+	parser.add_argument('--use-erf', action='store_true', default=False,
+			    help='Use more accurate error function for Gaussian calculation')
 	parser.add_argument('--debug', action='store_true', default=False,
 			    help='Print back trace in event of exception')
 
