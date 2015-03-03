@@ -82,28 +82,63 @@ def CrossingBlobs(args, duration_sec=0):
 			if duration_sec>0 and tsec>duration_sec:
 				break
 
-def Spiral(args, duration_sec=0, iloop=0):
+def Spiral(args, duration_sec=0):
 
 	unicorn.rotation(0)
 
-	nr=3
-	ntheta=6
+	max_ncolours=7
+	min_fwhm=1.5
 	rmin=1.5
-	rmax=3.5
-	theta0=np.linspace(0., scipy.constants.pi/180.*45, nr)
+	rmax=4.5
 	x0=4.
 	y0=4.
 	bg=(0, 0, 0)
+	thetastepdegmax=2.5
+	thetastepdegmin=5.
+	allcolours=[(255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255), (0,255,255), (255,255,255)]
 
-	all_colours=[[(255,0,0), (0,255,0), (0,0,255), (255,255,0), (255,0,255), (0,255,255), (255,255,255)],
-		     [(0,0,255), (255,255,255)],
-		     [(0,255,0), (255,255,0), (255,0,255)]]
+	ncolours=min(np.random.randint(2, max_ncolours+1), len(allcolours))
+	colours=[]
+	for i in range(ncolours):
+		while True:
+			col=allcolours[np.random.randint(0, len(allcolours))]
+			if not col in colours:
+				colours.append(col)
+				break
 
-	colours=all_colours[iloop%len(all_colours)]
+	# Circumference of outer radius
+	circumference=2.*scipy.constants.pi*rmax
 
-	tsec=0
+	# Maximum fwhm of spirals we can fit in circumference
+	max_fwhm=min(circumference/len(colours), 3)*0.7
+	#print("max_fwhm=%g" % max_fwhm)
 
-	while duration_sec==0 or tsec<duration_sec:
+	fwhm=np.random.random()*(max_fwhm-min_fwhm)+min_fwhm
+	#print("fwhm=%g" % fwhm)
+
+	max_ntheta=min(circumference/fwhm, 10) # Maximum number of spiral arms
+	#print("max_ntheta=%d" % max_ntheta)
+
+	# Choose ntheta as random multiple of len(colours) < max_ntheta 
+	ntheta=len(colours)*(np.random.randint(0, int(np.floor(float(max_ntheta)/len(colours))))+1)
+	#print("ntheta=%d" % ntheta)
+
+	# Don't allow spirals to overlap azimuthally
+	dtheta0sign=(np.random.randint(0,2)-0.5)*2
+	dtheta0=2.*scipy.constants.pi/ntheta*np.random.random()*dtheta0sign
+	#print("dtheta0=%g degrees" % (dtheta0/scipy.constants.pi*180))
+
+	nr=int(np.round(np.sqrt((rmax-rmin)*(rmax-rmin)+(rmax*dtheta0)*(rmax*dtheta0))/fwhm+1.))
+	#print("nr=%d" % nr)
+
+	theta0=np.linspace(0, dtheta0, nr)
+
+	thetastepsign=(np.random.randint(0,2)-0.5)*2
+	thetastepdeg=(thetastepdegmin+np.random.random()*(thetastepdegmax-thetastepdegmin))*thetastepsign
+	#print("thetastepdeg=%g degrees" % thetastepdeg)
+
+	start=time.time()
+	while duration_sec==0 or time.time()-start<duration_sec:
 
 		x=[]
 		y=[]
@@ -122,15 +157,13 @@ def Spiral(args, duration_sec=0, iloop=0):
 
 				x.append(x0+r*np.cos(theta))
 				y.append(y0+r*np.sin(theta))
-				fwhm=2.
-				sigma.append(fwhm/2.35*r/rmax)
+				sigma.append(max(0.5, fwhm*r/rmax)/2.35)
 				rgb.append(colours[(itheta)%len(colours)])
 
-			theta0[ir]+=scipy.constants.pi/180.*5 #*r/rmax
+			theta0[ir]+=scipy.constants.pi/180.*thetastepdeg
 
 		set_image(spots_to_image(x, y, sigma, rgb, bg_rgb=bg))
 		time.sleep(args.dt_sec)
-		tsec+=args.dt_sec
 		
 def ProcessCommandLine():
 
@@ -145,7 +178,7 @@ def ProcessCommandLine():
 			    help='Include spiral animation')
  	parser.add_argument('--duration-sec', metavar='SECONDS', type=float, default=2,
 			    help='Duration of each mode before cycling')
- 	parser.add_argument('--dt-sec', metavar='SECONDS', type=float, default=0.01,
+ 	parser.add_argument('--dt-sec', metavar='SECONDS', type=float, default=0.05,
 			    help='Interval between each animation frame')
  	parser.add_argument('--n-loop', metavar='COUNT', type=int, default=0,
 			    help='How times to show animations (0 for forever)')
@@ -169,7 +202,7 @@ def Run(args):
 		if args.crossing_blobs:
 			CrossingBlobs(args, duration_sec=duration_sec)
 		if args.spiral:
-			Spiral(args, duration_sec=duration_sec, iloop=iloop)
+			Spiral(args, duration_sec=duration_sec)
 		iloop+=1
 
 if __name__ == "__main__":
