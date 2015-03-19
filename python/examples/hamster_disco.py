@@ -101,8 +101,8 @@ def Spiral(args, duration_sec=0):
 
 	max_ncolours=7
 	min_fwhm=1.5
-	rmin=1.5
-	rmax=3.5
+	rmax=3.5+np.random.random()
+	rmin=0.5+np.random.random()
 	x0=4.
 	y0=4.
 	bg=(0, 0, 0)
@@ -114,7 +114,6 @@ def Spiral(args, duration_sec=0):
 		    (255,255,0),
 		    (255,0,255),
 		    (0,255,255),
-		    (255,255,255),
 		    (255,180,0)]
 
 	ncolours=min(np.random.randint(2, max_ncolours+1), len(allcolours))
