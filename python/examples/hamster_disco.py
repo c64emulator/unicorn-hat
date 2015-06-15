@@ -11,6 +11,7 @@ import time, scipy.constants, scipy.special
 import numpy as np
 import sys
 import traceback
+import os
 
 sqrt2=np.sqrt(2.)
 
@@ -33,6 +34,8 @@ def spots_to_image(xc, yc, spot_sigma, spot_rgb, imw=8, imh=8, bg_rgb=(0,0,0), u
 	b=np.zeros((imh, imw))+bg_rgb[2]
 
 	for i in range(len(xc)):
+		if xc[i]>imw+3*spot_sigma[i] or xc[i]<-3*spot_sigma[i] or yc[i]>imh+3*spot_sigma[i] or yc[i]<-3*spot_sigma[i]:
+			continue
 		if use_erf:
 			profile=gaussian_spot_psf_2d(x-0.5, x+0.5, xc[i], spot_sigma[i], y-0.5, y+0.5, yc[i], spot_sigma[i])*2*scipy.constants.pi*spot_sigma[i]*spot_sigma[i]
 		else:
@@ -58,7 +61,9 @@ def set_image((r, g, b), maxtotrgb=80):
 			maxtot=max(maxtot, r[ix, iy]+g[ix, iy]+b[ix, iy])
 			unicorn.set_pixel(ix, iy, int(r[ix, iy]), int(g[ix, iy]), int(b[ix, iy]))
 
-	brightness=maxtotrgb/maxtot
+	brightness=0
+	if maxtot>0:
+		brightness=maxtotrgb/maxtot
 	if brightness>1:
 		brightness=1
 	unicorn.brightness(brightness)
@@ -69,7 +74,7 @@ def CrossingBlobs(args, duration_sec=0):
 	tsec=0.
 	
 	unicorn.rotation(0)
-	while duration_sec==0 or tsec<duration_sec:
+	while (duration_sec==0 or tsec<duration_sec) and os.path.exists('/tmp/.hamster_disco'):
 		nframes=50
 		x0, y0=-4, 4
 		x1, y1=12, 4
@@ -101,6 +106,9 @@ def Spiral(args, duration_sec=0):
 
 	max_ncolours=7
 	min_fwhm=1.5
+	#dr=2+2*np.random.random()
+	#rmin=-dr+4.5*np.random.random()
+	#rmax=rmin+dr
 	rmax=3.5+np.random.random()
 	rmin=0.5+np.random.random()
 	x0=4.
@@ -157,32 +165,39 @@ def Spiral(args, duration_sec=0):
 	#print("thetastepdeg=%g degrees" % thetastepdeg)
 
 	start=time.time()
-	while duration_sec==0 or time.time()-start<duration_sec:
+	while (duration_sec==0 or time.time()-start<duration_sec) and os.path.exists('/tmp/.hamster_disco'):
 
 		x=[]
 		y=[]
 		sigma=[]
 		rgb=[]
 
-		for ir in range(nr):
+		tnorm=(time.time()-start)/duration_sec
 
-			if nr==1:
-				r=rmax
-			else:
-				r=rmin+ir*float(rmax-rmin)/(nr-1)
-			
-			for itheta in range(ntheta):
-				theta=theta0[ir]+itheta*2.*scipy.constants.pi/ntheta
+		if rmax>=0:
+			for ir in range(nr):
 
-				x.append(x0+r*np.cos(theta))
-				y.append(y0+r*np.sin(theta))
-				sigma.append(max(0.5, fwhm*r/rmax)/2.35)
-				rgb.append(colours[(itheta)%len(colours)])
+				if nr==1:
+					r=rmax
+				else:
+					r=max(0, rmin)+ir*float(rmax-rmin)/(nr-1)
 
-			theta0[ir]+=scipy.constants.pi/180.*thetastepdeg
+				for itheta in range(ntheta):
+					theta=theta0[ir]+itheta*2.*scipy.constants.pi/ntheta
+
+					x.append(x0+r*np.cos(theta))
+					y.append(y0+r*np.sin(theta))
+					sigma.append(max(0.5, fwhm*r/rmax)/2.35) #*(0.5+0.5*np.cos(2*tnorm**2.*scipy.constants.pi)*np.cos(2*tnorm**2.*scipy.constants.pi)))
+					rgb.append(colours[(itheta)%len(colours)])
+
+				theta0[ir]+=scipy.constants.pi/180.*thetastepdeg
+		
 
 		set_image(spots_to_image(x, y, sigma, rgb, bg_rgb=bg, use_erf=args.use_erf))
 		time.sleep(args.dt_sec)
+
+		#rmin+=0.1
+		#rmax+=0.1
 		
 def ProcessCommandLine():
 
@@ -211,6 +226,8 @@ def ProcessCommandLine():
 
 def Run(args):
 
+	open('/tmp/.hamster_disco', 'w').write("1\n")
+
 	nmodes=args.crossing_blobs+args.spiral # Count number of requested shows
 	if not nmodes:
 		print("Choose at least one animation!")
@@ -219,7 +236,7 @@ def Run(args):
 	duration_sec=args.duration_sec
 
 	iloop=0
-	while args.n_loop==0 or iloop<args.n_loop:
+	while (args.n_loop==0 or iloop<args.n_loop) and os.path.exists('/tmp/.hamster_disco'):
 		if args.crossing_blobs:
 			CrossingBlobs(args, duration_sec=duration_sec)
 		if args.spiral:
@@ -233,6 +250,7 @@ if __name__ == "__main__":
 	try:
 
 		Run(args)
+		
 
 	except Exception, err:
 
