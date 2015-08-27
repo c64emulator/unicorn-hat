@@ -8,17 +8,10 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello():
-
-   if os.path.exists('/tmp/.hamster_disco'):
-      message='Looks like hamster is having a disco' # - <a href="/kill_hamster_disco">Break it up</a>'
-   else:
-      message="Nothing happening"
-   now = datetime.datetime.now()
-   timeString = now.strftime("%Y-%m-%d %H:%M:%S")
    templateData = {
       'title' : "Hamster disco monitor",
-      'message' : message,
-      'time': timeString
+      'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      'running': os.path.exists('/tmp/.hamster_disco'),
       }
    return render_template('main.html', **templateData)
 

@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+   <head>
+      <title>{{ title }}</title>
+   </head>
+
+   <body>
+     {% if running %}
+     <h1>Looks like hamster is having a disco - <a href="/kill_hamster_disco">Break it up</a></h1>
+     {% else %}
+     <h1>Nothing doing</h2>
+{% endif %}
+      <h2>The date and time on the server is: {{ time }}</h2>
+   </body>
+</html>
