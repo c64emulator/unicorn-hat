@@ -4,11 +4,22 @@ from flask import Flask, render_template, redirect, request
 import datetime
 import os
 import sys
+import subprocess
 
 app = Flask(__name__)
 
-@app.route("/")
+def kill_disco():
+   try:
+      os.remove('/tmp/.hamster_disco')
+   except:
+      pass
+
+@app.route("/", methods=['GET', 'POST'])
 def hello():
+
+   if request.method == 'POST':
+      data=request.form
+
    templateData = {
       'title' : "Hamster disco monitor",
       'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -18,24 +29,30 @@ def hello():
 
 @app.route("/kill_hamster_disco")
 def kill_hamster_disco():
-   try:
-      os.remove('/tmp/.hamster_disco')
-      #return "Bye, bye hamster disco"
-   finally:
-      return redirect("/")
-      #return "The party was already over"
+   kill_disco()
+   return redirect("/")
 
 def shutdown_server():
-    func = request.environ.get('werkzeug.server.shutdown')
+    func=request.environ.get('werkzeug.server.shutdown')
     if func is None:
         raise RuntimeError('Not running with the Werkzeug Server')
     func()
 
-@app.route("/kill_hamster_disco_server")
-def kill_hamster_disco_server():
+@app.route("/shutdown_server")
+def shutdown_server():
    shutdown_server()
    return redirect("/")
-   #return 'Server shutting down...'
 
+@app.route("/shutdown")
+def shutdown_pi():
+   kill_disco()
+   subprocess.call(['sudo', 'halt'])
+   return redirect("/")
+
+@app.route("/reboot")
+def reboot_pi():
+   subprocess.call(['sudo', 'reboot'])
+   return redirect("/")
+   
 if __name__ == "__main__":
    app.run(host='0.0.0.0', port=80, debug=True)
