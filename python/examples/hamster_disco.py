@@ -12,6 +12,8 @@ import numpy as np
 import sys
 import traceback
 import os
+import UHScroll
+
 
 sqrt2=np.sqrt(2.)
 
@@ -210,6 +212,8 @@ def ProcessCommandLine():
 			    help='Include crossing blobs animation')
 	parser.add_argument('--spiral', action='store_true', default=False,
 			    help='Include spiral animation')
+	parser.add_argument('--scroll', action='store_true', default=False,
+			    help='Scroll text')
  	parser.add_argument('--duration-sec', metavar='SECONDS', type=float, default=2,
 			    help='Duration of each mode before cycling')
  	parser.add_argument('--dt-sec', metavar='SECONDS', type=float, default=0.05,
@@ -241,6 +245,22 @@ def Run(args):
 			CrossingBlobs(args, duration_sec=duration_sec)
 		if args.spiral:
 			Spiral(args, duration_sec=duration_sec)
+		if args.scroll:
+			messages=[]
+			messages+=[[('#hello world!', 'white', 150, 0.05)]]
+			messages+=[[('BBC Micro rulez!', 'pink', 150, 0.05)]]
+			messages+=[[('~smile 65~degrsc', 'yellow', 150, 0.05)]]
+			messages+=[[('10 PRINT CHR$(141) "Hello"', 'white', 150, 0.05),
+				   ('20 PRINT CHR$(141) "Hello"', 'white', 150, 0.05),
+				   ('30 GOTO 10', 'white', 150, 0.05)]]
+			messages+=[[('DEFCON 1   ', 'white', 150, 0.05)]]
+			messages+=[[('DEFCON 2   ', 'red', 150, 0.05)]]
+			messages+=[[('DEFCON 3   ', 'yellow', 150, 0.05)]]
+			messages+=[[('DEFCON 4   ', 'green', 150, 0.05)]]
+			messages+=[[('DEFCON 5   ', 'blue', 150, 0.05)]]
+			for text, colour, brightness, delay in messages[np.random.randint(0, len(messages))]:
+				UHScroll.unicorn_scroll(text, colour, brightness, delay)
+
 		iloop+=1
 
 if __name__ == "__main__":
@@ -259,4 +279,3 @@ if __name__ == "__main__":
 			print "\n--- Failure -------------------------------------"
 			traceback.print_exc(file=sys.stdout)
 			print "-------------------------------------------------------"
-
