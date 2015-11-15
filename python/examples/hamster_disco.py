@@ -13,6 +13,7 @@ import sys
 import traceback
 import os
 import UHScroll
+import datetime
 
 
 sqrt2=np.sqrt(2.)
@@ -212,6 +213,8 @@ def ProcessCommandLine():
 			    help='Include crossing blobs animation')
 	parser.add_argument('--spiral', action='store_true', default=False,
 			    help='Include spiral animation')
+	parser.add_argument('--clock', action='store_true', default=False,
+			    help='Text scroll clock')
 	parser.add_argument('--scroll', action='store_true', default=False,
 			    help='Scroll text')
  	parser.add_argument('--duration-sec', metavar='SECONDS', type=float, default=2,
@@ -232,7 +235,7 @@ def Run(args):
 
 	open('/tmp/.hamster_disco', 'w').write("1\n")
 
-	nmodes=args.crossing_blobs+args.spiral # Count number of requested shows
+	nmodes=args.crossing_blobs+args.spiral+args.scroll+args.clock # Count number of requested shows
 	if not nmodes:
 		print("Choose at least one animation!")
 		exit(1)
@@ -241,25 +244,27 @@ def Run(args):
 
 	iloop=0
 	while (args.n_loop==0 or iloop<args.n_loop) and os.path.exists('/tmp/.hamster_disco'):
+
 		if args.crossing_blobs:
 			CrossingBlobs(args, duration_sec=duration_sec)
+
 		if args.spiral:
 			Spiral(args, duration_sec=duration_sec)
+
 		if args.scroll:
 			messages=[]
-			messages+=[[('#hello world!', 'white', 150, 0.05)]]
 			messages+=[[('BBC Micro rulez!', 'pink', 150, 0.05)]]
-			messages+=[[('~smile 65~degrsc', 'yellow', 150, 0.05)]]
-			messages+=[[('10 PRINT CHR$(141) "Hello"', 'white', 150, 0.05),
-				   ('20 PRINT CHR$(141) "Hello"', 'white', 150, 0.05),
-				   ('30 GOTO 10', 'white', 150, 0.05)]]
-			messages+=[[('DEFCON 1   ', 'white', 150, 0.05)]]
-			messages+=[[('DEFCON 2   ', 'red', 150, 0.05)]]
-			messages+=[[('DEFCON 3   ', 'yellow', 150, 0.05)]]
-			messages+=[[('DEFCON 4   ', 'green', 150, 0.05)]]
-			messages+=[[('DEFCON 5   ', 'blue', 150, 0.05)]]
+
 			for text, colour, brightness, delay in messages[np.random.randint(0, len(messages))]:
-				UHScroll.unicorn_scroll(text, colour, brightness, delay)
+				UHScroll.unicorn_scroll("   %s   " % text.strip(), colour, brightness, delay)
+
+		if args.clock:
+			colours=['yellow', 'green', 'cyan', 'magenta', 'white']
+			colour=colours[np.random.randint(0, len(colours))]
+			brightness=150
+			delay=0.05
+			#UHScroll.unicorn_scroll("   %s   " % datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S'), colour, brightness, delay)
+			UHScroll.unicorn_scroll(" %s " % datetime.datetime.strftime(datetime.datetime.now(), '%H:%M'), colour, brightness, delay)
 
 		iloop+=1
 
